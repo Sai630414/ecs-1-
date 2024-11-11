@@ -1,0 +1,165 @@
+#include <DHT.h>
+#include <LiquidCrystal.h>
+#include <SoftwareSerial.h>
+
+// Pin Definitions for DHT and LCD
+#define DHTPIN A5
+#define DHTTYPE DHT11
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2); // Adjust according to your pins
+
+// Pin Definitions for Soil Moisture and Motor Control
+const int moisturePin = A4; // Soil moisture sensor pin
+const int motorPin1 = A3;   // IN3 for motor control
+const int motorPin2 = A2;   // IN4 for motor control
+
+// RE and DE Pins set the RS485 module for NPK sensor
+#define RE 8
+#define DE 7
+
+// Modbus RTU requests for reading NPK values
+const byte nitro[] = {0x01, 0x03, 0x00, 0x1E, 0x00, 0x01, 0xE4, 0x0C};
+const byte phos[] = {0x01, 0x03, 0x00, 0x1F, 0x00, 0x01, 0xB5, 0xCC};
+const byte pota[] = {0x01, 0x03, 0x00, 0x20, 0x00, 0x01, 0x85, 0xC0};
+
+// A variable used to store NPK values
+byte values[11];
+
+// Initialize the DHT sensor
+DHT dht(DHTPIN, DHTTYPE);
+
+// Sets up a new SoftwareSerial object for NPK communication
+SoftwareSerial mod(2, 3);
+
+void setup() {
+  Serial.begin(9600);          // Set the baud rate for the Serial port
+  mod.begin(9600);             // Set the baud rate for the SoftwareSerial object
+
+  pinMode(RE, OUTPUT);
+  pinMode(DE, OUTPUT);
+  
+  digitalWrite(RE, LOW);       // Set RS485 to receive mode
+  digitalWrite(DE, LOW);       // Ensure transmitter is off
+  
+  dht.begin();                 // Initialize DHT sensor
+  lcd.begin(16, 2);           // Initialize LCD
+  lcd.print("Irrigation Sys");
+  delay(2000);
+}
+
+void loop() {
+  // Read DHT11 sensor
+  float humidity = dht.readHumidity();
+  float temperature = dht.readTemperature();
+
+  // Check if DHT readings are valid
+  if (isnan(humidity) || isnan(temperature)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  // Read soil moisture
+  int soilMoistureValue = analogRead(moisturePin);
+  float soilMoisturePercent = map(soilMoistureValue, 0, 1023, 100, 0); // Inverted mapping
+
+  // Control motor based on soil moisture
+  if (soilMoisturePercent < 50) {
+    digitalWrite(motorPin1, HIGH); // Start motor
+    digitalWrite(motorPin2, LOW);
+  } else {
+    digitalWrite(motorPin1, LOW);  // Stop motor
+    digitalWrite(motorPin2, LOW);
+  }
+
+  // Read NPK values
+  byte nitrogenValue = nitrogen();
+  delay(250);
+  byte phosphorousValue = phosphorous();
+  delay(250);
+  byte potassiumValue = potassium();
+  delay(250);
+
+  // Display values on LCD
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("T:");
+  lcd.print(temperature);
+  lcd.print("C H:");
+  lcd.print(humidity);
+  lcd.print("%");
+
+  lcd.setCursor(0, 1);
+  lcd.print("Moist:");
+  lcd.print(soilMoisturePercent);
+  lcd.print("%");
+  lcd.setCursor(10, 1);
+  lcd.print("N:");
+  lcd.print(nitrogenValue);
+  lcd.print(" P:");
+  lcd.print(phosphorousValue);
+  lcd.print(" K:");
+  lcd.print(potassiumValue);
+
+  // Print values to the serial monitor for debugging
+  Serial.print("Humidity: ");
+  Serial.print(humidity);
+  Serial.println("%");
+  Serial.print("Temperature: ");
+  Serial.print(temperature);
+  Serial.println("C");
+  Serial.print("Soil Moisture: ");
+  Serial.print(soilMoisturePercent);
+  Serial.println("%");
+  Serial.print("Nitrogen: ");
+  Serial.print(nitrogenValue);
+  Serial.println(" mg/kg");
+  Serial.print("Phosphorous: ");
+  Serial.print(phosphorousValue);
+  Serial.println(" mg/kg");
+  Serial.print("Potassium: ");
+  Serial.print(potassiumValue);
+  Serial.println(" mg/kg");
+
+  delay(2000);
+}
+
+byte nitrogen() {
+  digitalWrite(DE, HIGH);
+  digitalWrite(RE, HIGH);
+  delay(10);
+  if (mod.write(nitro, sizeof(nitro)) == 8) {
+    digitalWrite(DE, LOW);
+    digitalWrite(RE, LOW);
+    for (byte i = 0; i < 7; i++) {
+      values[i] = mod.read();
+    }
+  }
+  return values[4];
+}
+
+byte phosphorous() {
+  digitalWrite(DE, HIGH);
+  digitalWrite(RE, HIGH);
+  delay(10);
+  if (mod.write(phos, sizeof(phos)) == 8) {
+    digitalWrite(DE, LOW);
+    digitalWrite(RE, LOW);
+    for (byte i = 0; i < 7; i++) {
+      values[i] = mod.read();
+    }
+  }
+  return values[4];
+}
+
+byte potassium() {
+  digitalWrite(DE, HIGH);
+  digitalWrite(RE, HIGH);
+  delay(10);
+  if (mod.write(pota, sizeof(pota)) == 8) {
+    digitalWrite(DE, LOW);
+    digitalWrite(RE, LOW);
+    for (byte i = 0; i < 7; i++) {
+      values[i] = mod.read();
+    }
+  }
+  return values[4];
+}
