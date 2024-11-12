@@ -1,0 +1,31 @@
+Humidity: 53.90%
+Temperature: 31.10C
+Soil Moisture: 1.00%
+Nitrogen: 15 mg/kg
+Phosphorous: 7 mg/kg
+Potassium: 80 mg/kg
+Humidity: 53.90%
+Temperature: 31.10C
+Soil Moisture: 1.00%
+Nitrogen: 16 mg/kg
+Phosphorous: 8 mg/kg
+Potassium: 83 mg/kg
+Humidity: 53.90%
+Temperature: 31.10C
+Soil Moisture: 1.00%
+Nitrogen: 15 mg/kg
+Phosphorous: 7 mg/kg
+Potassium: 82 mg/kg
+Humidity: 53.80%
+Temperature: 31.10C
+Soil Moisture: 1.00%
+Nitrogen: 16 mg/kg
+Phosphorous: 8 mg/kg
+Potassium: 81 mg/kg
+Humidity: 53.80%
+Temperature: 31.20C
+Soil Moisture: 1.00%
+Nitrogen: 16 mg/kg
+Phosphorous: 9 mg/kg
+Potassium: 82 mg/kg
+
